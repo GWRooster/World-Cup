@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Wager Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0A0E13;
+    --panel:#12181F;
+    --panel-raised:#1A222B;
+    --line:#28323D;
+    --amber:#E8A33D;
+    --amber-deep:#B8791F;
+    --amber-glow: rgba(232,163,61,0.35);
+    --win:#3FB68B;
+    --win-dim: rgba(63,182,139,0.12);
+    --loss:#E2574C;
+    --loss-dim: rgba(226,87,76,0.10);
+    --live:#5AA9E6;
+    --live-dim: rgba(90,169,230,0.12);
+    --push:#9C8AD1;
+    --push-dim: rgba(156,138,209,0.12);
+    --text:#EDEEF0;
+    --text-mute:#7C8794;
+    --text-faint:#4B5560;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(232,163,61,0.06), transparent 60%),
+      var(--void);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px;}
+
+  header{
+    padding:28px 20px 18px;
+    text-align:center;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.22em;
+    color:var(--amber);
+    text-transform:uppercase;
+  }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:26px;
+    letter-spacing:0.02em;
+    margin:6px 0 0;
+    color:var(--text);
+  }
+
+  .board{
+    margin:24px 0;
+    background:linear-gradient(180deg,var(--panel-raised),var(--panel));
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:22px 18px 18px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 20px 40px -20px rgba(0,0,0,0.6);
+  }
+  .teams-row{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    align-items:center;
+    gap:14px;
+  }
+  .team{text-align:center;}
+  .team label{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.14em;
+    color:var(--text-mute);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  .team input.name{
+    width:100%;
+    background:none;
+    border:none;
+    color:var(--text);
+    font-family:'Oswald',sans-serif;
+    font-size:17px;
+    font-weight:500;
+    text-align:center;
+    border-bottom:1px solid transparent;
+    padding:2px 0 4px;
+  }
+  .team input.name:focus{outline:none;border-bottom:1px solid var(--amber-deep);}
+  .score-input{
+    width:64px;
+    background:#050708;
+    border:1px solid var(--line);
+    border-radius:6px;
+    color:var(--amber);
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:30px;
+    text-align:center;
+    padding:6px 0;
+    text-shadow:0 0 14px var(--amber-glow);
+    -moz-appearance:textfield;
+  }
+  .score-input::-webkit-outer-spin-button,
+  .score-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .score-input:focus{outline:none;border-color:var(--amber-deep);}
+  .vs{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--text-faint);
+    font-size:12px;
+    padding-top:18px;
+  }
+  .score-pair{display:flex;justify-content:center;align-items:center;gap:8px;}
+  .score-dash{color:var(--text-faint);font-family:'IBM Plex Mono',monospace;font-size:20px;padding-top:18px;}
+
+  .phase-row{
+    margin-top:20px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .phase-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    background:none;
+    border:1px solid var(--line);
+    color:var(--text-mute);
+    padding:7px 12px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:all 0.15s ease;
+  }
+  .phase-btn:hover{border-color:var(--amber-deep);color:var(--text);}
+  .phase-btn.active{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:#1A1204;
+    font-weight:600;
+  }
+
+  .score-note{
+    text-align:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    color:var(--text-faint);
+    margin-top:12px;
+    letter-spacing:0.02em;
+  }
+
+  .section-label{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:30px 0 12px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--text-mute);
+  }
+  .section-label::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+  .section-label .hint{
+    font-size:9.5px;
+    letter-spacing:0.06em;
+    color:var(--text-faint);
+    text-transform:none;
+  }
+
+  .slip{border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .slip:empty{display:none;}
+  .row{
+    display:grid;
+    grid-template-columns:1fr auto auto auto;
+    align-items:center;
+    gap:14px;
+    padding:14px 16px;
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+    transition:background 0.2s ease;
+  }
+  .row:last-child{border-bottom:none;}
+  .row.won{background:var(--win-dim);}
+  .row.lost{background:var(--loss-dim); opacity:0.6;}
+  .row.live{background:var(--live-dim);}
+  .row.push{background:var(--push-dim);}
+  .row.locked-anchor{outline:1px solid var(--amber); outline-offset:-1px;}
+  .row.excluded{opacity:0.28;}
+  .row.excluded .badge{visibility:hidden;}
+
+  .lock-btn{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:6px;
+    width:26px;
+    height:26px;
+    color:var(--text-faint);
+    font-size:13px;
+    cursor:pointer;
+    line-height:1;
+    justify-self:end;
+  }
+  .lock-btn.on{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:#1A1204;
+  }
+
+  .import-panel{margin:22px 0 0;}
+  #importBody textarea{
+    width:100%;
+    min-height:110px;
+    background:#050708;
+    border:1px solid var(--line);
+    border-radius:8px;
+    color:var(--text);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    padding:10px;
+    resize:vertical;
+  }
+  #importBody textarea:focus{outline:none; border-color:var(--amber-deep);}
+  .action-btn{
+    flex:1;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    padding:10px 0;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--panel-raised);
+    color:var(--text-mute);
+    cursor:pointer;
+  }
+  .action-btn.primary{
+    background:var(--amber);
+    border-color:var(--amber);
+    color:#1A1204;
+    font-weight:600;
+  }
+  .import-error{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--loss);
+    margin-top:8px;
+    min-height:14px;
+  }
+
+  .lock-banner{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:var(--panel-raised);
+    border:1px solid var(--amber-deep);
+    border-radius:8px;
+    padding:10px 14px;
+    margin:14px 0;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--text);
+  }
+  .lock-banner.show{display:flex;}
+  .lock-banner button{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--text-mute);
+    border-radius:14px;
+    padding:4px 10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    cursor:pointer;
+  }
+
+  .row-main .label{
+    font-family:'Oswald',sans-serif;
+    font-size:15.5px;
+    font-weight:500;
+    color:var(--text);
+  }
+  .row-main .odds{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--amber);
+    margin-top:2px;
+  }
+  .row-main .stake{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--text-mute);
+    margin-left:8px;
+  }
+
+  .badge{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    font-weight:600;
+    padding:4px 9px;
+    border-radius:20px;
+    text-transform:uppercase;
+    white-space:nowrap;
+    justify-self:end;
+    border:none;
+  }
+  .badge.pending{background:rgba(124,135,148,0.15);color:var(--text-mute);}
+  .badge.live{background:rgba(90,169,230,0.18);color:var(--live);}
+  .badge.won{background:rgba(63,182,139,0.18);color:var(--win);}
+  .badge.lost{background:rgba(226,87,76,0.15);color:var(--loss);}
+  .badge.push{background:rgba(156,138,209,0.18);color:var(--push);}
+  .badge.manual{cursor:pointer;}
+  .badge.manual:after{content:' \\21BB'; opacity:0.6;}
+
+  .return{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    font-weight:600;
+    text-align:right;
+    min-width:64px;
+    color:var(--text-mute);
+  }
+  .row.won .return{color:var(--win);}
+  .row.live .return{color:var(--text);}
+  .row.lost .return{color:var(--text-faint); text-decoration:line-through;}
+  .row.push .return{color:var(--push);}
+
+  .summary{
+    margin-top:24px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .sum-cell{
+    background:var(--panel);
+    padding:16px 12px;
+    text-align:center;
+  }
+  .sum-cell .k{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--text-mute);
+    margin-bottom:6px;
+  }
+  .sum-cell .v{
+    font-family:'Oswald',sans-serif;
+    font-size:20px;
+    font-weight:600;
+  }
+  .sum-cell.staked .v{color:var(--text);}
+  .sum-cell.live .v{color:var(--live);}
+  .sum-cell.won .v{color:var(--win);}
+
+  footer{
+    text-align:center;
+    margin-top:28px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    color:var(--text-faint);
+    letter-spacing:0.04em;
+  }
+
+  @media (max-width:480px){
+    .row{grid-template-columns:1fr auto auto;}
+    .badge{justify-self:start; grid-column:1 / -1; margin-top:2px;}
+    h1{font-size:21px;}
+    .score-input{width:52px;font-size:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Live Wager Board</div>
+    <h1>Match Slip Tracker</h1>
+  </header>
+
+  <div class="import-panel">
+    <button id="toggleImport" class="phase-btn" style="width:100%; border-radius:8px;">New Game — Import Slip</button>
+    <div id="importBody" style="display:none; margin-top:10px;">
+      <textarea id="importData" placeholder='Paste the JSON slip data here'></textarea>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button id="loadSlip" class="action-btn primary">Load Slip</button>
+        <button id="clearBoard" class="action-btn">Clear Board</button>
+      </div>
+      <div id="importError" class="import-error"></div>
+    </div>
+  </div>
+
+  <div class="board">
+    <div class="teams-row">
+      <div class="team">
+        <label>Team A</label>
+        <input class="name" id="nameA" value="Australia">
+      </div>
+      <div class="vs">score</div>
+      <div class="team">
+        <label>Team B</label>
+        <input class="name" id="nameB" value="Egypt">
+      </div>
+    </div>
+
+    <div class="teams-row" style="margin-top:10px;">
+      <div class="score-pair" style="grid-column:1/-1; justify-content:center; gap:16px;">
+        <input class="score-input" id="curA" type="number" min="0" inputmode="numeric" pattern="[0-9]*" value="0">
+        <span class="score-dash">–</span>
+        <input class="score-input" id="curB" type="number" min="0" inputmode="numeric" pattern="[0-9]*" value="0">
+      </div>
+    </div>
+
+    <div class="phase-row" id="phaseRow">
+      <button class="phase-btn" data-phase="pre">Pre-Match</button>
+      <button class="phase-btn active" data-phase="first_half">1st Half</button>
+      <button class="phase-btn" data-phase="halftime">Halftime</button>
+      <button class="phase-btn" data-phase="second_half">2nd Half</button>
+      <button class="phase-btn" data-phase="full_time">Full Time</button>
+    </div>
+
+    <div id="htFields" style="margin-top:16px;">
+      <div class="teams-row">
+        <div class="team"><label>1st-Half Score — Team A</label></div>
+        <div></div>
+        <div class="team"><label>1st-Half Score — Team B</label></div>
+      </div>
+      <div class="teams-row" style="margin-top:6px;">
+        <div class="score-pair" style="grid-column:1/-1; justify-content:center; gap:16px;">
+          <input class="score-input" id="htA" type="number" min="0" inputmode="numeric" pattern="[0-9]*" value="0" style="font-size:20px; width:52px; color:var(--text);">
+          <span class="score-dash" style="padding-top:10px;">–</span>
+          <input class="score-input" id="htB" type="number" min="0" inputmode="numeric" pattern="[0-9]*" value="0" style="font-size:20px; width:52px; color:var(--text);">
+        </div>
+      </div>
+    </div>
+
+    <div class="score-note">The score above is the current live tally. Enter the 1st-half score as it happens — it settles HT/FT and 1st-half wagers once the corresponding phase is reached.</div>
+  </div>
+
+  <div class="lock-banner" id="lockBanner">
+    <span id="lockBannerText"></span>
+    <button id="clearLock">Clear lock</button>
+  </div>
+
+  <div class="section-label">Halftime / Fulltime</div>
+  <div class="slip" id="slipHtFt"></div>
+
+  <div class="section-label">Correct Score</div>
+  <div class="slip" id="slipScore"></div>
+
+  <div class="section-label">1st-Half Team Result</div>
+  <div class="slip" id="slipTeamPeriod"></div>
+
+  <div class="section-label">Player Props <span class="hint">— tap status to settle</span></div>
+  <div class="slip" id="slipPlayer"></div>
+
+  <div class="section-label">Advancement / Outright <span class="hint">— tap status to settle</span></div>
+  <div class="slip" id="slipOutright"></div>
+
+  <div class="summary">
+    <div class="sum-cell staked">
+      <div class="k">Staked</div>
+      <div class="v" id="sumStaked">$0</div>
+    </div>
+    <div class="sum-cell live">
+      <div class="k">Live</div>
+      <div class="v" id="sumLive">$0</div>
+    </div>
+    <div class="sum-cell won">
+      <div class="k">Won</div>
+      <div class="v" id="sumWon">$0</div>
+    </div>
+  </div>
+
+  <footer>Enter the running score and advance the match phase as the game unfolds — wager status updates automatically. Player props and advancement bets settle by tap since they can't be read off the scoreboard alone.</footer>
+</div>
+
+<script>
+let wagers = {
+  htft: [
+    { label:"{A} – {B}", ht:'A', ft:'B', odds:2300, stake:25 },
+    { label:"{A} – Draw", ht:'A', ft:'D', odds:1100, stake:25 },
+    { label:"Draw – Draw", ht:'D', ft:'D', odds:310, stake:25 },
+    { label:"{B} – Draw", ht:'B', ft:'D', odds:1300, stake:25 },
+  ],
+  score: [
+    { label:"{A} 1, {B} 1", a:1, b:1, odds:440, stake:25 },
+    { label:"{A} 1, {B} 2", a:1, b:2, odds:850, stake:25 },
+    { label:"{A} 0, {B} 1", a:0, b:1, odds:500, stake:25 },
+  ],
+  team_period: [
+    { label:"{B} 1st Half", team:'B', period:'1st Half', spread:0, odds:-160, stake:40 },
+  ],
+  player: [
+    { label:"Nestory Irankunda", odds:750, stake:10 },
+  ],
+  outright: [
+    { label:"{B} Advances", period:"OT Included", odds:-155, stake:155 },
+  ]
+};
+
+let manualStatus = {}; // key -> 'pending'|'won'|'lost'
+let lockedKey = null;  // e.g. "htft-2" or "score-0" — only htft/score participate in locking
+
+function resultOf(a,b){ if(a>b) return 'A'; if(b>a) return 'B'; return 'D'; }
+function fmtMoney(n){ return '$' + Math.round(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function payout(stake, odds){
+  return odds >= 0 ? stake + stake*(odds/100) : stake + stake*(100/Math.abs(odds));
+}
+
+let phase = 'first_half';
+
+function nameFor(code){
+  return code==='A' ? document.getElementById('nameA').value.trim() || 'Team A'
+       : code==='B' ? document.getElementById('nameB').value.trim() || 'Team B'
+       : 'Draw';
+}
+
+function fillLabel(tpl){
+  return tpl.replace('{A}', nameFor('A')).replace('{B}', nameFor('B'));
+}
+
+function clampScore(id){
+  const el = document.getElementById(id);
+  let v = parseInt(el.value)||0;
+  if(v < 0){ v = 0; el.value = 0; }
+  return v;
+}
+
+function getState(){
+  return {
+    curA: clampScore('curA'),
+    curB: clampScore('curB'),
+    htA: clampScore('htA'),
+    htB: clampScore('htB'),
+    phase
+  };
+}
+
+function htftStatus(bet, s){
+  if(s.phase==='pre' || s.phase==='first_half') return 'pending';
+  const actualHT = resultOf(s.htA, s.htB);
+  if(actualHT !== bet.ht) return 'lost';
+  if(s.phase !== 'full_time') return 'live';
+  const actualFT = resultOf(s.curA, s.curB);
+  return actualFT === bet.ft ? 'won' : 'lost';
+}
+
+function scoreStatus(bet, s){
+  if(s.phase==='full_time'){
+    return (s.curA===bet.a && s.curB===bet.b) ? 'won' : 'lost';
+  }
+  if(s.phase==='pre') return 'pending';
+  if(s.curA > bet.a || s.curB > bet.b) return 'lost';
+  return 'live';
+}
+
+function teamPeriodStatus(bet, s){
+  if(s.phase==='pre') return 'pending';
+  if(s.phase==='first_half') return 'live';
+  const diff = (bet.team==='A' ? s.htA - s.htB : s.htB - s.htA) + (bet.spread||0);
+  if(diff > 0) return 'won';
+  if(diff < 0) return 'lost';
+  return 'push';
+}
+
+function manualStatusOf(key){
+  return manualStatus[key] || 'pending';
+}
+
+function statusLabel(st){
+  return { pending:'Pending', live:'Live', won:'Won', lost:'Lost', push:'Push' }[st];
+}
+
+function finalCategory(bet){
+  return bet.ft !== undefined ? bet.ft : resultOf(bet.a, bet.b);
+}
+
+function betByKey(key){
+  if(!key) return null;
+  const [type, idx] = key.split('-');
+  return { type, bet: wagers[type][idx] };
+}
+
+function isExcluded(type, bet){
+  if(!lockedKey) return false;
+  if(type!=='htft' && type!=='score') return false;
+  const locked = betByKey(lockedKey);
+  if(locked.type!=='htft' && locked.type!=='score') return false;
+  if(locked.type===type && wagers[type].indexOf(bet)===+lockedKey.split('-')[1]) return false;
+  if(finalCategory(bet) !== finalCategory(locked.bet)) return true;
+  if(locked.type==='htft' && type==='htft' && bet.ht !== locked.bet.ht) return true;
+  return false;
+}
+
+function render(){
+  const s = getState();
+  const containers = {
+    htft: document.getElementById('slipHtFt'),
+    score: document.getElementById('slipScore'),
+    team_period: document.getElementById('slipTeamPeriod'),
+    player: document.getElementById('slipPlayer'),
+    outright: document.getElementById('slipOutright'),
+  };
+  Object.values(containers).forEach(el => el.innerHTML = '');
+
+  let staked=0, live=0, won=0;
+
+  wagers.htft.forEach((bet,i)=>{
+    const st = htftStatus(bet, s);
+    staked += bet.stake;
+    const ret = payout(bet.stake, bet.odds);
+    if(st==='won') won += ret;
+    if(st==='live' || st==='pending') live += ret;
+    const key = 'htft-'+i;
+    containers.htft.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, isExcluded('htft',bet), false));
+  });
+
+  wagers.score.forEach((bet,i)=>{
+    const st = scoreStatus(bet, s);
+    staked += bet.stake;
+    const ret = payout(bet.stake, bet.odds);
+    if(st==='won') won += ret;
+    if(st==='live' || st==='pending') live += ret;
+    const key = 'score-'+i;
+    containers.score.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, isExcluded('score',bet), false));
+  });
+
+  wagers.team_period.forEach((bet,i)=>{
+    const st = teamPeriodStatus(bet, s);
+    staked += bet.stake;
+    const ret = st==='push' ? bet.stake : payout(bet.stake, bet.odds);
+    if(st==='won') won += ret;
+    if(st==='live' || st==='pending') live += ret;
+    const key = 'team_period-'+i;
+    containers.team_period.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, false, false));
+  });
+
+  wagers.player.forEach((bet,i)=>{
+    const key = 'player-'+i;
+    const st = manualStatusOf(key);
+    staked += bet.stake;
+    const ret = payout(bet.stake, bet.odds);
+    if(st==='won') won += ret;
+    if(st==='live' || st==='pending') live += ret;
+    containers.player.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, false, true));
+  });
+
+  wagers.outright.forEach((bet,i)=>{
+    const key = 'outright-'+i;
+    const st = manualStatusOf(key);
+    staked += bet.stake;
+    const ret = payout(bet.stake, bet.odds);
+    if(st==='won') won += ret;
+    if(st==='live' || st==='pending') live += ret;
+    containers.outright.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, false, true));
+  });
+
+  const banner = document.getElementById('lockBanner');
+  if(lockedKey){
+    const locked = betByKey(lockedKey);
+    banner.classList.add('show');
+    document.getElementById('lockBannerText').textContent = 'Locked to: ' + fillLabel(locked.bet.label) + ' — incompatible HT/FT and score outcomes dimmed';
+  } else {
+    banner.classList.remove('show');
+  }
+
+  document.getElementById('sumStaked').textContent = fmtMoney(staked);
+  document.getElementById('sumLive').textContent = fmtMoney(live);
+  document.getElementById('sumWon').textContent = fmtMoney(won);
+
+  document.getElementById('htFields').style.opacity = (s.phase==='pre') ? '0.4' : '1';
+}
+
+function buildRow(label, odds, stake, status, ret, key, excluded, manual){
+  const row = document.createElement('div');
+  const isAnchor = key === lockedKey;
+  const oddsStr = (odds >= 0 ? '+' : '') + odds;
+  row.className = 'row ' + status + (isAnchor ? ' locked-anchor' : '') + (excluded ? ' excluded' : '');
+  const lockBtnHtml = manual ? '' : `<button class="lock-btn ${isAnchor ? 'on' : ''}" data-key="${key}" title="Lock this outcome">${isAnchor ? '🔒' : '🔓'}</button>`;
+  row.innerHTML = `
+    <div class="row-main">
+      <div class="label">${label}</div>
+      <div><span class="odds">${oddsStr}</span><span class="stake">stake ${fmtMoney(stake)}</span></div>
+    </div>
+    <span class="badge ${status}${manual ? ' manual' : ''}">${statusLabel(status)}</span>
+    <div class="return">${status==='lost' ? fmtMoney(stake) : fmtMoney(ret)}</div>
+    ${lockBtnHtml}
+  `;
+  if(manual){
+    row.querySelector('.badge').addEventListener('click', ()=>{
+      const order = ['pending','won','lost'];
+      const cur = manualStatusOf(key);
+      const next = order[(order.indexOf(cur)+1) % order.length];
+      manualStatus[key] = next;
+      render();
+    });
+  } else {
+    const lb = row.querySelector('.lock-btn');
+    if(lb){
+      lb.addEventListener('click', ()=>{
+        lockedKey = (lockedKey === key) ? null : key;
+        render();
+      });
+    }
+  }
+  return row;
+}
+
+document.querySelectorAll('.phase-btn[data-phase]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.phase-btn[data-phase]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    phase = btn.dataset.phase;
+    render();
+  });
+});
+
+['curA','curB','htA','htB','nameA','nameB'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', render);
+});
+
+document.getElementById('clearLock').addEventListener('click', ()=>{
+  lockedKey = null;
+  render();
+});
+
+function resetMatchState(){
+  ['curA','curB','htA','htB'].forEach(id=> document.getElementById(id).value = 0);
+  phase = 'pre';
+  document.querySelectorAll('.phase-btn[data-phase]').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.phase-btn[data-phase="pre"]').classList.add('active');
+  lockedKey = null;
+  manualStatus = {};
+  render();
+}
+
+function loadSlip(){
+  const errEl = document.getElementById('importError');
+  errEl.textContent = '';
+  let data;
+  try{
+    data = JSON.parse(document.getElementById('importData').value);
+  } catch(e){
+    errEl.textContent = 'That is not valid JSON — check for a missing bracket or comma.';
+    return;
+  }
+  if(!data.wagers || !Array.isArray(data.wagers) || data.wagers.length===0){
+    errEl.textContent = 'JSON is missing a non-empty "wagers" array.';
+    return;
+  }
+  const next = { htft:[], score:[], team_period:[], player:[], outright:[] };
+  for(const w of data.wagers){
+    if(w.type==='htft'){
+      next.htft.push({ label:w.label, ht:w.ht, ft:w.ft, odds:Number(w.odds), stake:Number(w.stake) });
+    } else if(w.type==='score'){
+      next.score.push({ label:w.label, a:Number(w.aGoals), b:Number(w.bGoals), odds:Number(w.odds), stake:Number(w.stake) });
+    } else if(w.type==='team_period'){
+      next.team_period.push({ label:w.label, team:w.team, period:w.period, spread:Number(w.spread)||0, odds:Number(w.odds), stake:Number(w.stake) });
+    } else if(w.type==='player'){
+      next.player.push({ label:w.label, odds:Number(w.odds), stake:Number(w.stake) });
+    } else if(w.type==='outright'){
+      next.outright.push({ label:w.label, period:w.period, odds:Number(w.odds), stake:Number(w.stake) });
+    }
+  }
+  const total = next.htft.length + next.score.length + next.team_period.length + next.player.length + next.outright.length;
+  if(total===0){
+    errEl.textContent = 'No entries had a recognized "type" (htft, score, team_period, player, outright).';
+    return;
+  }
+  wagers = next;
+  document.getElementById('nameA').value = data.teamA || 'Team A';
+  document.getElementById('nameB').value = data.teamB || 'Team B';
+  document.getElementById('importData').value = '';
+  document.getElementById('importBody').style.display = 'none';
+  resetMatchState();
+}
+
+document.getElementById('toggleImport').addEventListener('click', ()=>{
+  const body = document.getElementById('importBody');
+  body.style.display = body.style.display==='none' ? 'block' : 'none';
+});
+document.getElementById('loadSlip').addEventListener('click', loadSlip);
+document.getElementById('clearBoard').addEventListener('click', ()=>{
+  wagers = { htft:[], score:[], team_period:[], player:[], outright:[] };
+  resetMatchState();
+});
+
+render();
+</script>
+</body>
+</html>
