@@ -21,6 +21,8 @@
     --loss-dim: rgba(226,87,76,0.10);
     --live:#5AA9E6;
     --live-dim: rgba(90,169,230,0.12);
+    --push:#9C8AD1;
+    --push-dim: rgba(156,138,209,0.12);
     --text:#EDEEF0;
     --text-mute:#7C8794;
     --text-faint:#4B5560;
@@ -38,7 +40,6 @@
   }
   .wrap{max-width:760px;margin:0 auto;padding:0 20px;}
 
-  /* ---- Header ---- */
   header{
     padding:28px 20px 18px;
     text-align:center;
@@ -60,7 +61,6 @@
     color:var(--text);
   }
 
-  /* ---- Scoreboard ---- */
   .board{
     margin:24px 0;
     background:linear-gradient(180deg,var(--panel-raised),var(--panel));
@@ -164,7 +164,6 @@
     letter-spacing:0.02em;
   }
 
-  /* ---- Section label ---- */
   .section-label{
     display:flex;
     align-items:center;
@@ -182,12 +181,18 @@
     height:1px;
     background:var(--line);
   }
+  .section-label .hint{
+    font-size:9.5px;
+    letter-spacing:0.06em;
+    color:var(--text-faint);
+    text-transform:none;
+  }
 
-  /* ---- Wager rows ---- */
   .slip{border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .slip:empty{display:none;}
   .row{
     display:grid;
-    grid-template-columns:1fr auto auto;
+    grid-template-columns:1fr auto auto auto;
     align-items:center;
     gap:14px;
     padding:14px 16px;
@@ -199,6 +204,7 @@
   .row.won{background:var(--win-dim);}
   .row.lost{background:var(--loss-dim); opacity:0.6;}
   .row.live{background:var(--live-dim);}
+  .row.push{background:var(--push-dim);}
   .row.locked-anchor{outline:1px solid var(--amber); outline-offset:-1px;}
   .row.excluded{opacity:0.28;}
   .row.excluded .badge{visibility:hidden;}
@@ -220,7 +226,6 @@
     border-color:var(--amber);
     color:#1A1204;
   }
-  .row{grid-template-columns:1fr auto auto auto;}
 
   .import-panel{margin:22px 0 0;}
   #importBody textarea{
@@ -318,11 +323,15 @@
     text-transform:uppercase;
     white-space:nowrap;
     justify-self:end;
+    border:none;
   }
   .badge.pending{background:rgba(124,135,148,0.15);color:var(--text-mute);}
   .badge.live{background:rgba(90,169,230,0.18);color:var(--live);}
   .badge.won{background:rgba(63,182,139,0.18);color:var(--win);}
   .badge.lost{background:rgba(226,87,76,0.15);color:var(--loss);}
+  .badge.push{background:rgba(156,138,209,0.18);color:var(--push);}
+  .badge.manual{cursor:pointer;}
+  .badge.manual:after{content:' \\21BB'; opacity:0.6;}
 
   .return{
     font-family:'IBM Plex Mono',monospace;
@@ -335,8 +344,8 @@
   .row.won .return{color:var(--win);}
   .row.live .return{color:var(--text);}
   .row.lost .return{color:var(--text-faint); text-decoration:line-through;}
+  .row.push .return{color:var(--push);}
 
-  /* ---- Summary ---- */
   .summary{
     margin-top:24px;
     display:grid;
@@ -409,12 +418,12 @@
     <div class="teams-row">
       <div class="team">
         <label>Team A</label>
-        <input class="name" id="nameA" value="Switzerland">
+        <input class="name" id="nameA" value="Australia">
       </div>
       <div class="vs">score</div>
       <div class="team">
         <label>Team B</label>
-        <input class="name" id="nameB" value="Algeria">
+        <input class="name" id="nameB" value="Egypt">
       </div>
     </div>
 
@@ -428,17 +437,17 @@
 
     <div class="phase-row" id="phaseRow">
       <button class="phase-btn" data-phase="pre">Pre-Match</button>
-      <button class="phase-btn" data-phase="first_half">1st Half</button>
-      <button class="phase-btn active" data-phase="halftime">Halftime</button>
+      <button class="phase-btn active" data-phase="first_half">1st Half</button>
+      <button class="phase-btn" data-phase="halftime">Halftime</button>
       <button class="phase-btn" data-phase="second_half">2nd Half</button>
       <button class="phase-btn" data-phase="full_time">Full Time</button>
     </div>
 
     <div id="htFields" style="margin-top:16px;">
       <div class="teams-row">
-        <div class="team"><label>Halftime — Team A</label></div>
+        <div class="team"><label>1st-Half Score — Team A</label></div>
         <div></div>
-        <div class="team"><label>Halftime — Team B</label></div>
+        <div class="team"><label>1st-Half Score — Team B</label></div>
       </div>
       <div class="teams-row" style="margin-top:6px;">
         <div class="score-pair" style="grid-column:1/-1; justify-content:center; gap:16px;">
@@ -449,7 +458,7 @@
       </div>
     </div>
 
-    <div class="score-note">The score entered above reflects the current live tally. The halftime score locks the HT result once the halftime phase is reached.</div>
+    <div class="score-note">The score above is the current live tally. Enter the 1st-half score as it happens — it settles HT/FT and 1st-half wagers once the corresponding phase is reached.</div>
   </div>
 
   <div class="lock-banner" id="lockBanner">
@@ -462,6 +471,15 @@
 
   <div class="section-label">Correct Score</div>
   <div class="slip" id="slipScore"></div>
+
+  <div class="section-label">1st-Half Team Result</div>
+  <div class="slip" id="slipTeamPeriod"></div>
+
+  <div class="section-label">Player Props <span class="hint">— tap status to settle</span></div>
+  <div class="slip" id="slipPlayer"></div>
+
+  <div class="section-label">Advancement / Outright <span class="hint">— tap status to settle</span></div>
+  <div class="slip" id="slipOutright"></div>
 
   <div class="summary">
     <div class="sum-cell staked">
@@ -478,31 +496,43 @@
     </div>
   </div>
 
-  <footer>Enter the running score and advance the match phase as the game unfolds — wager status updates automatically.</footer>
+  <footer>Enter the running score and advance the match phase as the game unfolds — wager status updates automatically. Player props and advancement bets settle by tap since they can't be read off the scoreboard alone.</footer>
 </div>
 
 <script>
 let wagers = {
   htft: [
-    { label:"{A} – {B}", ht:'A', ft:'B', odds:4000, stake:50 },
-    { label:"{B} – {A}", ht:'B', ft:'A', odds:2000, stake:25 },
-    { label:"{A} – Draw", ht:'A', ft:'D', odds:1200, stake:25 },
-    { label:"{B} – Draw", ht:'B', ft:'D', odds:1600, stake:25 },
-    { label:"Draw – Draw", ht:'D', ft:'D', odds:410,  stake:25 },
+    { label:"{A} – {B}", ht:'A', ft:'B', odds:2300, stake:25 },
+    { label:"{A} – Draw", ht:'A', ft:'D', odds:1100, stake:25 },
+    { label:"Draw – Draw", ht:'D', ft:'D', odds:310, stake:25 },
+    { label:"{B} – Draw", ht:'B', ft:'D', odds:1300, stake:25 },
   ],
   score: [
-    { label:"{A} 2, {B} 1", a:2, b:1, odds:650,  stake:25 },
-    { label:"{A} 2, {B} 2", a:2, b:2, odds:1100, stake:25 },
-    { label:"{A} 1, {B} 2", a:1, b:2, odds:1300, stake:25 },
-    { label:"{A} 3, {B} 1", a:3, b:1, odds:1400, stake:25 },
+    { label:"{A} 1, {B} 1", a:1, b:1, odds:440, stake:25 },
+    { label:"{A} 1, {B} 2", a:1, b:2, odds:850, stake:25 },
+    { label:"{A} 0, {B} 1", a:0, b:1, odds:500, stake:25 },
+  ],
+  team_period: [
+    { label:"{B} 1st Half", team:'B', period:'1st Half', spread:0, odds:-160, stake:40 },
+  ],
+  player: [
+    { label:"Nestory Irankunda", odds:750, stake:10 },
+  ],
+  outright: [
+    { label:"{B} Advances", period:"OT Included", odds:-155, stake:155 },
   ]
 };
 
-function resultOf(a,b){ if(a>b) return 'A'; if(b>a) return 'B'; return 'D'; }
-function fmtMoney(n){ return '$' + n.toLocaleString('en-US',{maximumFractionDigits:0}); }
-function payout(stake, odds){ return stake + stake*(odds/100); }
+let manualStatus = {}; // key -> 'pending'|'won'|'lost'
+let lockedKey = null;  // e.g. "htft-2" or "score-0" — only htft/score participate in locking
 
-let phase = 'halftime';
+function resultOf(a,b){ if(a>b) return 'A'; if(b>a) return 'B'; return 'D'; }
+function fmtMoney(n){ return '$' + Math.round(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function payout(stake, odds){
+  return odds >= 0 ? stake + stake*(odds/100) : stake + stake*(100/Math.abs(odds));
+}
+
+let phase = 'first_half';
 
 function nameFor(code){
   return code==='A' ? document.getElementById('nameA').value.trim() || 'Team A'
@@ -549,15 +579,26 @@ function scoreStatus(bet, s){
   return 'live';
 }
 
+function teamPeriodStatus(bet, s){
+  if(s.phase==='pre') return 'pending';
+  if(s.phase==='first_half') return 'live';
+  const diff = (bet.team==='A' ? s.htA - s.htB : s.htB - s.htA) + (bet.spread||0);
+  if(diff > 0) return 'won';
+  if(diff < 0) return 'lost';
+  return 'push';
+}
+
+function manualStatusOf(key){
+  return manualStatus[key] || 'pending';
+}
+
 function statusLabel(st){
-  return { pending:'Pending', live:'Live', won:'Won', lost:'Lost' }[st];
+  return { pending:'Pending', live:'Live', won:'Won', lost:'Lost', push:'Push' }[st];
 }
 
 function finalCategory(bet){
   return bet.ft !== undefined ? bet.ft : resultOf(bet.a, bet.b);
 }
-
-let lockedKey = null; // e.g. "htft-2" or "score-0"
 
 function betByKey(key){
   if(!key) return null;
@@ -567,7 +608,9 @@ function betByKey(key){
 
 function isExcluded(type, bet){
   if(!lockedKey) return false;
+  if(type!=='htft' && type!=='score') return false;
   const locked = betByKey(lockedKey);
+  if(locked.type!=='htft' && locked.type!=='score') return false;
   if(locked.type===type && wagers[type].indexOf(bet)===+lockedKey.split('-')[1]) return false;
   if(finalCategory(bet) !== finalCategory(locked.bet)) return true;
   if(locked.type==='htft' && type==='htft' && bet.ht !== locked.bet.ht) return true;
@@ -576,10 +619,14 @@ function isExcluded(type, bet){
 
 function render(){
   const s = getState();
-  const htftEl = document.getElementById('slipHtFt');
-  const scoreEl = document.getElementById('slipScore');
-  htftEl.innerHTML = '';
-  scoreEl.innerHTML = '';
+  const containers = {
+    htft: document.getElementById('slipHtFt'),
+    score: document.getElementById('slipScore'),
+    team_period: document.getElementById('slipTeamPeriod'),
+    player: document.getElementById('slipPlayer'),
+    outright: document.getElementById('slipOutright'),
+  };
+  Object.values(containers).forEach(el => el.innerHTML = '');
 
   let staked=0, live=0, won=0;
 
@@ -590,7 +637,7 @@ function render(){
     if(st==='won') won += ret;
     if(st==='live' || st==='pending') live += ret;
     const key = 'htft-'+i;
-    htftEl.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, isExcluded('htft',bet)));
+    containers.htft.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, isExcluded('htft',bet), false));
   });
 
   wagers.score.forEach((bet,i)=>{
@@ -600,14 +647,44 @@ function render(){
     if(st==='won') won += ret;
     if(st==='live' || st==='pending') live += ret;
     const key = 'score-'+i;
-    scoreEl.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, isExcluded('score',bet)));
+    containers.score.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, isExcluded('score',bet), false));
+  });
+
+  wagers.team_period.forEach((bet,i)=>{
+    const st = teamPeriodStatus(bet, s);
+    staked += bet.stake;
+    const ret = st==='push' ? bet.stake : payout(bet.stake, bet.odds);
+    if(st==='won') won += ret;
+    if(st==='live' || st==='pending') live += ret;
+    const key = 'team_period-'+i;
+    containers.team_period.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, false, false));
+  });
+
+  wagers.player.forEach((bet,i)=>{
+    const key = 'player-'+i;
+    const st = manualStatusOf(key);
+    staked += bet.stake;
+    const ret = payout(bet.stake, bet.odds);
+    if(st==='won') won += ret;
+    if(st==='live' || st==='pending') live += ret;
+    containers.player.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, false, true));
+  });
+
+  wagers.outright.forEach((bet,i)=>{
+    const key = 'outright-'+i;
+    const st = manualStatusOf(key);
+    staked += bet.stake;
+    const ret = payout(bet.stake, bet.odds);
+    if(st==='won') won += ret;
+    if(st==='live' || st==='pending') live += ret;
+    containers.outright.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, false, true));
   });
 
   const banner = document.getElementById('lockBanner');
   if(lockedKey){
     const locked = betByKey(lockedKey);
     banner.classList.add('show');
-    document.getElementById('lockBannerText').textContent = 'Locked to: ' + fillLabel(locked.bet.label) + ' — incompatible outcomes dimmed';
+    document.getElementById('lockBannerText').textContent = 'Locked to: ' + fillLabel(locked.bet.label) + ' — incompatible HT/FT and score outcomes dimmed';
   } else {
     banner.classList.remove('show');
   }
@@ -616,32 +693,47 @@ function render(){
   document.getElementById('sumLive').textContent = fmtMoney(live);
   document.getElementById('sumWon').textContent = fmtMoney(won);
 
-  document.getElementById('htFields').style.opacity = (s.phase==='pre' || s.phase==='first_half') ? '0.4' : '1';
+  document.getElementById('htFields').style.opacity = (s.phase==='pre') ? '0.4' : '1';
 }
 
-function buildRow(label, odds, stake, status, ret, key, excluded){
+function buildRow(label, odds, stake, status, ret, key, excluded, manual){
   const row = document.createElement('div');
   const isAnchor = key === lockedKey;
+  const oddsStr = (odds >= 0 ? '+' : '') + odds;
   row.className = 'row ' + status + (isAnchor ? ' locked-anchor' : '') + (excluded ? ' excluded' : '');
+  const lockBtnHtml = manual ? '' : `<button class="lock-btn ${isAnchor ? 'on' : ''}" data-key="${key}" title="Lock this outcome">${isAnchor ? '🔒' : '🔓'}</button>`;
   row.innerHTML = `
     <div class="row-main">
       <div class="label">${label}</div>
-      <div><span class="odds">+${odds}</span><span class="stake">stake ${fmtMoney(stake)}</span></div>
+      <div><span class="odds">${oddsStr}</span><span class="stake">stake ${fmtMoney(stake)}</span></div>
     </div>
-    <span class="badge ${status}">${statusLabel(status)}</span>
+    <span class="badge ${status}${manual ? ' manual' : ''}">${statusLabel(status)}</span>
     <div class="return">${status==='lost' ? fmtMoney(stake) : fmtMoney(ret)}</div>
-    <button class="lock-btn ${isAnchor ? 'on' : ''}" data-key="${key}" title="Lock this outcome">${isAnchor ? '🔒' : '🔓'}</button>
+    ${lockBtnHtml}
   `;
-  row.querySelector('.lock-btn').addEventListener('click', ()=>{
-    lockedKey = (lockedKey === key) ? null : key;
-    render();
-  });
+  if(manual){
+    row.querySelector('.badge').addEventListener('click', ()=>{
+      const order = ['pending','won','lost'];
+      const cur = manualStatusOf(key);
+      const next = order[(order.indexOf(cur)+1) % order.length];
+      manualStatus[key] = next;
+      render();
+    });
+  } else {
+    const lb = row.querySelector('.lock-btn');
+    if(lb){
+      lb.addEventListener('click', ()=>{
+        lockedKey = (lockedKey === key) ? null : key;
+        render();
+      });
+    }
+  }
   return row;
 }
 
-document.querySelectorAll('.phase-btn').forEach(btn=>{
+document.querySelectorAll('.phase-btn[data-phase]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.phase-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.phase-btn[data-phase]').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     phase = btn.dataset.phase;
     render();
@@ -663,6 +755,7 @@ function resetMatchState(){
   document.querySelectorAll('.phase-btn[data-phase]').forEach(b=>b.classList.remove('active'));
   document.querySelector('.phase-btn[data-phase="pre"]').classList.add('active');
   lockedKey = null;
+  manualStatus = {};
   render();
 }
 
@@ -680,20 +773,26 @@ function loadSlip(){
     errEl.textContent = 'JSON is missing a non-empty "wagers" array.';
     return;
   }
-  const newHtft = [], newScore = [];
+  const next = { htft:[], score:[], team_period:[], player:[], outright:[] };
   for(const w of data.wagers){
     if(w.type==='htft'){
-      newHtft.push({ label:w.label, ht:w.ht, ft:w.ft, odds:Number(w.odds), stake:Number(w.stake) });
+      next.htft.push({ label:w.label, ht:w.ht, ft:w.ft, odds:Number(w.odds), stake:Number(w.stake) });
     } else if(w.type==='score'){
-      newScore.push({ label:w.label, a:Number(w.aGoals), b:Number(w.bGoals), odds:Number(w.odds), stake:Number(w.stake) });
+      next.score.push({ label:w.label, a:Number(w.aGoals), b:Number(w.bGoals), odds:Number(w.odds), stake:Number(w.stake) });
+    } else if(w.type==='team_period'){
+      next.team_period.push({ label:w.label, team:w.team, period:w.period, spread:Number(w.spread)||0, odds:Number(w.odds), stake:Number(w.stake) });
+    } else if(w.type==='player'){
+      next.player.push({ label:w.label, odds:Number(w.odds), stake:Number(w.stake) });
+    } else if(w.type==='outright'){
+      next.outright.push({ label:w.label, period:w.period, odds:Number(w.odds), stake:Number(w.stake) });
     }
   }
-  if(newHtft.length===0 && newScore.length===0){
-    errEl.textContent = 'No entries had a recognized "type" of htft or score.';
+  const total = next.htft.length + next.score.length + next.team_period.length + next.player.length + next.outright.length;
+  if(total===0){
+    errEl.textContent = 'No entries had a recognized "type" (htft, score, team_period, player, outright).';
     return;
   }
-  wagers.htft = newHtft;
-  wagers.score = newScore;
+  wagers = next;
   document.getElementById('nameA').value = data.teamA || 'Team A';
   document.getElementById('nameB').value = data.teamB || 'Team B';
   document.getElementById('importData').value = '';
@@ -707,8 +806,7 @@ document.getElementById('toggleImport').addEventListener('click', ()=>{
 });
 document.getElementById('loadSlip').addEventListener('click', loadSlip);
 document.getElementById('clearBoard').addEventListener('click', ()=>{
-  wagers.htft = [];
-  wagers.score = [];
+  wagers = { htft:[], score:[], team_period:[], player:[], outright:[] };
   resetMatchState();
 });
 
