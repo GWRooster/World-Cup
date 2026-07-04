@@ -349,7 +349,7 @@
   .summary{
     margin-top:24px;
     display:grid;
-    grid-template-columns:repeat(3,1fr);
+    grid-template-columns:repeat(4,1fr);
     gap:1px;
     background:var(--line);
     border:1px solid var(--line);
@@ -358,7 +358,7 @@
   }
   .sum-cell{
     background:var(--panel);
-    padding:16px 12px;
+    padding:16px 10px;
     text-align:center;
   }
   .sum-cell .k{
@@ -371,12 +371,39 @@
   }
   .sum-cell .v{
     font-family:'Oswald',sans-serif;
-    font-size:20px;
+    font-size:19px;
     font-weight:600;
   }
   .sum-cell.staked .v{color:var(--text);}
   .sum-cell.live .v{color:var(--live);}
   .sum-cell.won .v{color:var(--win);}
+  .sum-cell.lost .v{color:var(--loss);}
+
+  .net-total{
+    margin-top:14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--panel-raised);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+  }
+  .net-total .k{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--text-mute);
+  }
+  .net-total .v{
+    font-family:'Oswald',sans-serif;
+    font-size:24px;
+    font-weight:600;
+  }
+  .net-total .v.pos{color:var(--win);}
+  .net-total .v.neg{color:var(--loss);}
+  .net-total .v.flat{color:var(--text-mute);}
 
   footer{
     text-align:center;
@@ -392,6 +419,7 @@
     .badge{justify-self:start; grid-column:1 / -1; margin-top:2px;}
     h1{font-size:21px;}
     .score-input{width:52px;font-size:24px;}
+    .summary{grid-template-columns:repeat(2,1fr);}
   }
 </style>
 </head>
@@ -494,6 +522,15 @@
       <div class="k">Won</div>
       <div class="v" id="sumWon">$0</div>
     </div>
+    <div class="sum-cell lost">
+      <div class="k">Lost</div>
+      <div class="v" id="sumLost">$0</div>
+    </div>
+  </div>
+
+  <div class="net-total">
+    <span class="k">Net (Won − Lost)</span>
+    <span class="v flat" id="sumNet">$0</span>
   </div>
 
   <footer>Enter the running score and advance the match phase as the game unfolds — wager status updates automatically. Player props and advancement bets settle by tap since they can't be read off the scoreboard alone.</footer>
@@ -628,13 +665,14 @@ function render(){
   };
   Object.values(containers).forEach(el => el.innerHTML = '');
 
-  let staked=0, live=0, won=0;
+  let staked=0, live=0, won=0, lost=0;
 
   wagers.htft.forEach((bet,i)=>{
     const st = htftStatus(bet, s);
     staked += bet.stake;
     const ret = payout(bet.stake, bet.odds);
     if(st==='won') won += ret;
+    if(st==='lost') lost += bet.stake;
     if(st==='live' || st==='pending') live += ret;
     const key = 'htft-'+i;
     containers.htft.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, isExcluded('htft',bet), false));
@@ -645,6 +683,7 @@ function render(){
     staked += bet.stake;
     const ret = payout(bet.stake, bet.odds);
     if(st==='won') won += ret;
+    if(st==='lost') lost += bet.stake;
     if(st==='live' || st==='pending') live += ret;
     const key = 'score-'+i;
     containers.score.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, isExcluded('score',bet), false));
@@ -655,6 +694,7 @@ function render(){
     staked += bet.stake;
     const ret = st==='push' ? bet.stake : payout(bet.stake, bet.odds);
     if(st==='won') won += ret;
+    if(st==='lost') lost += bet.stake;
     if(st==='live' || st==='pending') live += ret;
     const key = 'team_period-'+i;
     containers.team_period.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, false, false));
@@ -666,6 +706,7 @@ function render(){
     staked += bet.stake;
     const ret = payout(bet.stake, bet.odds);
     if(st==='won') won += ret;
+    if(st==='lost') lost += bet.stake;
     if(st==='live' || st==='pending') live += ret;
     containers.player.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, false, true));
   });
@@ -676,6 +717,7 @@ function render(){
     staked += bet.stake;
     const ret = payout(bet.stake, bet.odds);
     if(st==='won') won += ret;
+    if(st==='lost') lost += bet.stake;
     if(st==='live' || st==='pending') live += ret;
     containers.outright.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, false, true));
   });
@@ -692,6 +734,13 @@ function render(){
   document.getElementById('sumStaked').textContent = fmtMoney(staked);
   document.getElementById('sumLive').textContent = fmtMoney(live);
   document.getElementById('sumWon').textContent = fmtMoney(won);
+  document.getElementById('sumLost').textContent = fmtMoney(lost);
+
+  const net = won - lost;
+  const netEl = document.getElementById('sumNet');
+  netEl.textContent = (net > 0 ? '+' : net < 0 ? '−' : '') + fmtMoney(Math.abs(net)).replace('$','$');
+  netEl.classList.remove('pos','neg','flat');
+  netEl.classList.add(net > 0 ? 'pos' : net < 0 ? 'neg' : 'flat');
 
   document.getElementById('htFields').style.opacity = (s.phase==='pre') ? '0.4' : '1';
 }
