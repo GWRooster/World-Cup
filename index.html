@@ -655,6 +655,7 @@ function isExcluded(type, bet){
 }
 
 function render(){
+  saveState();
   const s = getState();
   const containers = {
     htft: document.getElementById('slipHtFt'),
@@ -798,6 +799,59 @@ document.getElementById('clearLock').addEventListener('click', ()=>{
   render();
 });
 
+const STORAGE_KEY = 'wagerBoardState_v1';
+
+function saveState(){
+  try{
+    const state = {
+      nameA: document.getElementById('nameA').value,
+      nameB: document.getElementById('nameB').value,
+      curA: document.getElementById('curA').value,
+      curB: document.getElementById('curB').value,
+      htA: document.getElementById('htA').value,
+      htB: document.getElementById('htB').value,
+      phase: phase,
+      wagers: wagers,
+      manualStatus: manualStatus,
+      lockedKey: lockedKey
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e){
+    // storage unavailable — proceed without persistence
+  }
+}
+
+function loadPersisted(){
+  let raw;
+  try{
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch(e){
+    return;
+  }
+  if(!raw) return;
+  let state;
+  try{
+    state = JSON.parse(raw);
+  } catch(e){
+    return;
+  }
+  if(state.wagers) wagers = state.wagers;
+  if(state.manualStatus) manualStatus = state.manualStatus;
+  if('lockedKey' in state) lockedKey = state.lockedKey;
+  if(state.nameA !== undefined) document.getElementById('nameA').value = state.nameA;
+  if(state.nameB !== undefined) document.getElementById('nameB').value = state.nameB;
+  if(state.curA !== undefined) document.getElementById('curA').value = state.curA;
+  if(state.curB !== undefined) document.getElementById('curB').value = state.curB;
+  if(state.htA !== undefined) document.getElementById('htA').value = state.htA;
+  if(state.htB !== undefined) document.getElementById('htB').value = state.htB;
+  if(state.phase){
+    phase = state.phase;
+    document.querySelectorAll('.phase-btn[data-phase]').forEach(b=>b.classList.remove('active'));
+    const btn = document.querySelector('.phase-btn[data-phase="'+phase+'"]');
+    if(btn) btn.classList.add('active');
+  }
+}
+
 function resetMatchState(){
   ['curA','curB','htA','htB'].forEach(id=> document.getElementById(id).value = 0);
   phase = 'pre';
@@ -856,9 +910,11 @@ document.getElementById('toggleImport').addEventListener('click', ()=>{
 document.getElementById('loadSlip').addEventListener('click', loadSlip);
 document.getElementById('clearBoard').addEventListener('click', ()=>{
   wagers = { htft:[], score:[], team_period:[], player:[], outright:[] };
+  try{ localStorage.removeItem(STORAGE_KEY); } catch(e){}
   resetMatchState();
 });
 
+loadPersisted();
 render();
 </script>
 </body>
