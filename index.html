@@ -578,7 +578,7 @@ function nameFor(code){
 }
 
 function fillLabel(tpl){
-  return tpl.replace('{A}', nameFor('A')).replace('{B}', nameFor('B'));
+  return tpl.replaceAll('{A}', nameFor('A')).replaceAll('{B}', nameFor('B'));
 }
 
 function clampScore(id){
