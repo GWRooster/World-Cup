@@ -619,6 +619,10 @@ function scoreStatus(bet, s){
 function teamPeriodStatus(bet, s){
   if(s.phase==='pre') return 'pending';
   if(s.phase==='first_half') return 'live';
+  if(bet.team === 'D'){
+    const actual = resultOf(s.htA, s.htB);
+    return actual === 'D' ? 'won' : 'lost';
+  }
   const diff = (bet.team==='A' ? s.htA - s.htB : s.htB - s.htA) + (bet.spread||0);
   if(diff > 0) return 'won';
   if(diff < 0) return 'lost';
