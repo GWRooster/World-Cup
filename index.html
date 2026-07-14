@@ -581,6 +581,12 @@ function fillLabel(tpl){
   return tpl.replaceAll('{A}', nameFor('A')).replaceAll('{B}', nameFor('B'));
 }
 
+function scopeSuffix(scope){
+  if(scope === 'ET') return ' (Extra Time)';
+  if(scope === 'PEN') return ' (Penalties)';
+  return '';
+}
+
 function clampScore(id){
   const el = document.getElementById(id);
   let v = parseInt(el.value)||0;
@@ -713,7 +719,7 @@ function render(){
     if(st==='won') won += ret;
     if(st==='lost') lost += bet.stake;
     if(st==='live' || st==='pending') live += ret;
-    containers.player.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, false, true));
+    containers.player.appendChild(buildRow(fillLabel(bet.label) + scopeSuffix(bet.scope), bet.odds, bet.stake, st, ret, key, false, true));
   });
 
   wagers.outright.forEach((bet,i)=>{
@@ -724,7 +730,7 @@ function render(){
     if(st==='won') won += ret;
     if(st==='lost') lost += bet.stake;
     if(st==='live' || st==='pending') live += ret;
-    containers.outright.appendChild(buildRow(fillLabel(bet.label), bet.odds, bet.stake, st, ret, key, false, true));
+    containers.outright.appendChild(buildRow(fillLabel(bet.label) + scopeSuffix(bet.scope), bet.odds, bet.stake, st, ret, key, false, true));
   });
 
   const banner = document.getElementById('lockBanner');
@@ -889,9 +895,9 @@ function loadSlip(){
     } else if(w.type==='team_period'){
       next.team_period.push({ label:w.label, team:w.team, period:w.period, spread:Number(w.spread)||0, odds:Number(w.odds), stake:Number(w.stake) });
     } else if(w.type==='player'){
-      next.player.push({ label:w.label, odds:Number(w.odds), stake:Number(w.stake) });
+      next.player.push({ label:w.label, scope:w.scope||'REG', odds:Number(w.odds), stake:Number(w.stake) });
     } else if(w.type==='outright'){
-      next.outright.push({ label:w.label, period:w.period, odds:Number(w.odds), stake:Number(w.stake) });
+      next.outright.push({ label:w.label, scope:w.scope||'REG', period:w.period, odds:Number(w.odds), stake:Number(w.stake) });
     }
   }
   const total = next.htft.length + next.score.length + next.team_period.length + next.player.length + next.outright.length;
